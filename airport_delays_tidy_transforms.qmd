@@ -1,0 +1,22 @@
+---
+title: "airport-delays-tidy-transform"
+author: "Jessica Chen"
+format: gfm
+editor: visual
+---
+
+## Approach
+
+\(1\) Create .csv file (try MySQL database)
+
+\(2\) Upload into R and use tidyr and dplyr to tidy and transform
+
+\(3\) Compare arrival delays, be sure to include the following requirements from assignment:
+
+-   Compared percentage (not just counts) of either delays or arrival rates for two airlines overall. \[Either with a chart, or a table; both would be exemplary\].  Include text summarizes findings from this comparison. (+10)
+
+-   Compared percentage (not just counts) of either delays or arrival rates for two airlines across five cities. \[Either with a chart, or a table; both would be exemplary\].  Include text summarizes findings from this comparison. (+10)
+
+-   Describe discrepancy between comparing two airlines’ flight performances city-by-city and overall. (+5)
+
+-   Explain discrepancy between comparing two airlines’ flight performances city-by-city and overall.(+5)
