@@ -5,18 +5,88 @@ format: gfm
 editor: visual
 ---
 
-## Approach
+## Intro
 
-\(1\) Create .csv file (try MySQL database)
+The following analyzes "on time" flight data for 2 airlines across 5 different cities. The tidyr package was used inorder to clean up and transform wide data into a longer form. Furthermore, piping, grouping, summarizing and filtering functions were used to create comparison data tables.
 
-\(2\) Upload into R and use tidyr and dplyr to tidy and transform
+## Data Cleanup
 
-\(3\) Compare arrival delays, be sure to include the following requirements from assignment:
+```{r}
+library(tidyverse)
+library(knitr)
+library(scales)
 
--   Compared percentage (not just counts) of either delays or arrival rates for two airlines overall. \[Either with a chart, or a table; both would be exemplary\].  Include text summarizes findings from this comparison. (+10)
 
--   Compared percentage (not just counts) of either delays or arrival rates for two airlines across five cities. \[Either with a chart, or a table; both would be exemplary\].  Include text summarizes findings from this comparison. (+10)
+#read data from github
+airport_delays_data <- read.csv("https://raw.githubusercontent.com/JessChen0/Airport-delays-tidy-transform/refs/heads/main/airport_delays.csv")
 
--   Describe discrepancy between comparing two airlines’ flight performances city-by-city and overall. (+5)
+#add labels and remove empty row
+airport_delays_data[2,1] <- "ALASKA"
+airport_delays_data[5,1] <- "AMWEST"
+airport_delays_data <- airport_delays_data[-3,]
+airport_delays_data <- rename(airport_delays_data, Airline = X, Timeliness = X.1)
 
--   Explain discrepancy between comparing two airlines’ flight performances city-by-city and overall.(+5)
+#transform to long format
+airport_delays_data_long <-
+airport_delays_data %>% 
+  pivot_longer(
+    cols = c(Los.Angeles, Phoenix, San.Diego, San.Francisco, Seattle),
+    names_to = "Location",
+    values_to = "Number.of.Flights"
+  ) 
+
+
+head(airport_delays_data_long)
+```
+
+## Analysis
+
+### Airline Comparison
+
+A. Overall comparison
+
+When comparing airlines, AMWEST has better on time percentage of 89% compared with 86.7% for ALASKA.
+
+```{r}
+
+airport_delays_data_long %>%
+  group_by(Airline, Timeliness) %>%
+  summarize(total_flights = sum(Number.of.Flights, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Airline) %>%
+  mutate(airline_total = sum(total_flights), percentage = percent(total_flights/airline_total, accuracy = 0.01)) %>%
+  filter(Timeliness == "on time") %>%
+  kable()
+
+```
+
+B. Comparison by city
+
+A city by city comparison reveals that ALASKA airlines had better on time percentage compared with AMWEST across locations.
+
+```{r}
+
+airport_delays_data_long %>%
+  group_by(Location, Airline, Timeliness) %>%
+  summarize(total_flights = sum(Number.of.Flights, na.rm = TRUE), .groups = "drop") %>%
+  group_by(Location, Airline) %>%
+  mutate(ontime_location_total = sum(total_flights)) %>%
+  group_by(Location, Airline) %>%
+  mutate(percentage = percent(total_flights / ontime_location_total, accuracy = 0.01)) %>%
+  arrange(Location, Airline) %>%
+  filter(Timeliness == "on time") %>%
+  kable()
+
+
+```
+
+## Discussion
+
+The results reveal an interesting discrepancy where the aggregate on time results indicate that AMWEST is the more dependable carrier while a deeper analysis by city reveal the opposite to be true (i.e., Alaska has a better track record for each city).
+
+This is an example of Simpson's Paradox, which was discussed in class. A deeper look reveals that this caused by certain cities (e.g., Phoenix) where even though Alaska airline has a better city "on time" percentage, the number of flights for AMWEST drove up the aggregate total number of overall "on time" flights. In this example, a city by city analysis appears to be a more accurate assessment of on time performance.
+
+My initial hypothesis is that the deeper dive comparisons would always be accurate assessment. However, after some querying with Claude LLM, I was convinced that there may be cases (e.g., where the subgroups are artificially defined, where subgroups are too small to be reliable, etc.) where an aggregate is more appropriate. I think the lesson is to do the analysis for both to ensure the whole picture is considered before determining which result is best to use.
+
+References:
+
+References Claude. (2026). Anthropic \[Large language model\]. Accessed Feb 28, 2026.<https://claude.ai/share/5db8599a-1047-4603-b241-9409b0492804>
